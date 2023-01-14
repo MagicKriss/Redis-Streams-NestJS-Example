@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  app:
+    container_name: app
+    image: node:18
+    environment:
+      HTTPS_METHOD: noredirect
+    ports:
+      - 8081:3000
+    volumes:
+      - ./:/usr/src/app/
+    working_dir: /usr/src/app
+    command: npm run start:dev
+
+  redis:
+    container_name: redis
+    image: redis:7
+    restart: always
