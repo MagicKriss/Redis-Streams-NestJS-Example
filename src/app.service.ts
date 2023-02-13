@@ -73,6 +73,33 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     return messages;
   }
 
+  public async consumeMessageFromGroup(
+    group: string,
+    consumer: string,
+    count: number,
+  ) {
+    const generator = this.streamService.getConsumerMessageGenerator({
+      streamName: EXAMPLE_STREAM_NAME,
+      group,
+      consumer,
+      count,
+    });
+    const messages: Record<string, string>[] = [];
+    let counter = 0;
+    for await (const messageObj of generator) {
+      messages.push(this.parseMessage(messageObj.message));
+      counter++;
+      if (counter >= count) {
+        break;
+      }
+    }
+    return {
+      group,
+      consumer,
+      messages,
+    };
+  }
+
   /**
    * This will continuously read messages from the stream until the service is destroyed.
    */

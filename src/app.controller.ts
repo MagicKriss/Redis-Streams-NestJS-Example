@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller()
@@ -34,7 +34,12 @@ export class AppController {
     return this.appService.getMultipleNewMessages(3);
   }
 
-  // TODO implement example using consumer groups
-  @Get('consume/message')
-  consumeMessages() {}
+  @Get('consume/:group/:consumer/:count')
+  consumeMessages(
+    @Param('group') group: string,
+    @Param('consumer') consumer: string,
+    @Param('count') count: number,
+  ) {
+    return this.appService.consumeMessageFromGroup(group, consumer, count);
+  }
 }

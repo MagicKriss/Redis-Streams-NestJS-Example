@@ -21,6 +21,12 @@ export type AsyncRedisStreamGenerator = AsyncGenerator<
   unknown
 >;
 
+export type RedsXReadGroupResponse = Awaited<
+  ReturnType<RedisClient['xReadGroup']>
+>;
+export type RedsXAutoClaimResponse = Awaited<
+  ReturnType<RedisClient['xAutoClaim']>
+>;
 /**
  * Injection token for redis client
  */

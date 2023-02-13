@@ -1,10 +1,18 @@
 import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ClientClosedError, commandOptions } from 'redis';
-import { AddToStreamParams, ReadStreamParams } from './interfaces';
+import {
+  AcknowledgeMessageParams,
+  AddToStreamParams,
+  AutoclaimMessageParams,
+  CosnumeStreamParams,
+  ReadStreamParams
+} from './interfaces';
 import {
   RedisClient,
   RedisStreamMessage,
   REDIS_CLIENT,
+  RedsXAutoClaimResponse,
+  RedsXReadGroupResponse
 } from './redis-client.type';
 
 @Injectable()
@@ -83,13 +91,123 @@ export class RedisService implements OnModuleDestroy {
         await this.connectToRedis();
         return null;
       }
+      console.error(`Failed to xRead from Redis stream: ${error.message}`);
+      return null;
+    }
+  }
+
+  public async readConsumerGroup({
+    streamName,
+    group,
+    consumer,
+    blockMs,
+    count,
+  }: CosnumeStreamParams): Promise<RedisStreamMessage[] | null> {
+    let response: RedsXReadGroupResponse = null;
+    try {
+      response = await this.redis.xReadGroup(
+        commandOptions({ isolated: true }), // uses new connection from pool not to block other redis calls
+        group,
+        consumer,
+        {
+          key: streamName,
+          id: '>',
+        },
+        { BLOCK: blockMs, COUNT: count },
+      );
+    } catch (error) {
+      if (error instanceof ClientClosedError) {
+        console.log(`${error.message} ...RECONNECTING`);
+        await this.connectToRedis();
+        return null;
+      }
+      if (error.message.includes('NOGROUP')) {
+        console.log(`${error.message} ...CREATING GROUP`);
+        await this.createConsumerGroup(streamName, group);
+        return null;
+      }
       console.error(
-        `Failed to xRead from Redis Stream: ${error.message}`,
-        error?.stack,
-        undefined,
-        undefined,
+        `Failed to xReadGroup from Redis stream: ${error.message}`,
         error,
       );
+
+      return null;
+    }
+
+    const messages = response?.[0]?.messages; // returning first stream (since only 1 stream used)
+    return messages || null;
+  }
+
+  public async acknowledgeMessages({
+    streamName,
+    group,
+    messageIds,
+  }: AcknowledgeMessageParams) {
+    try {
+      await this.redis.xAck(streamName, group, messageIds);
+    } catch (error) {
+      if (error instanceof ClientClosedError) {
+        console.log(`${error.message} ...RECONNECTING`);
+        await this.connectToRedis();
+        return null;
+      }
+      console.error(`Failed to xAck from Redis stream: ${error.message}`);
+      return null;
+    }
+  }
+
+  public async autoClaimMessage({
+    streamName,
+    group,
+    consumer,
+    minIdleTimeMs,
+    count,
+  }: AutoclaimMessageParams) {
+    let response: RedsXAutoClaimResponse = null;
+    try {
+      response = await this.redis.xAutoClaim(
+        streamName,
+        group,
+        consumer,
+        minIdleTimeMs,
+        '0-0', // use 0-0 to claim all messages. In case of multiple consumers, this will be used to claim messages from other consumers
+        {
+          COUNT: count,
+        },
+      );
+    } catch (error) {
+      if (error instanceof ClientClosedError) {
+        console.log(`${error.message} ...RECONNECTING`);
+        await this.connectToRedis();
+        return null;
+      }
+      console.error(`Failed to xAutoClaim from Redis stream: ${error.message}`);
+      return null;
+    }
+    return response?.messages || null;
+  }
+
+  private async createConsumerGroup(streamName: string, group: string) {
+    try {
+      await this.redis.xGroupCreate(
+        streamName,
+        group,
+        '0', // use 0 to create group from the beginning of the stream, use '$' to create group from the end of the stream
+        {
+          MKSTREAM: true,
+        },
+      );
+    } catch (error) {
+      if (error.message.includes('BUSYGROUP')) {
+        // Consumer group already exists
+        return;
+      }
+      if (error instanceof ClientClosedError) {
+        console.log(`${error.message} ...RECONNECTING`);
+        await this.connectToRedis();
+        return null;
+      }
+      console.error(`Failed to xGroupCreate: ${error.message}`);
       return null;
     }
   }
@@ -101,13 +219,7 @@ export class RedisService implements OnModuleDestroy {
         await this.redis.connect();
       }
     } catch (error) {
-      console.error(
-        `[${error.name}] ${error.message}`,
-        error.stack,
-        undefined,
-        undefined,
-        error,
-      );
+      console.error(`[${error.name}] ${error.message}`, error);
     }
   }
 }
