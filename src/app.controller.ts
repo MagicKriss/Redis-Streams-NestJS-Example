@@ -19,6 +19,7 @@ export class AppController {
       <ul>
       <li><a href="/message">/message</a>  for single message </li>
       <li> <a href="/messages">/messages</a> to fetch 3 messages </li>
+      <li> <a href="/consume/example-group/example-consumer/3">/consume/example-group/example-consumer/3</a> to consume 5 messages via consumer group </li>
       </ul>
       </body>
       </html>`;
