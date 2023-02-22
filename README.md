@@ -7,8 +7,4 @@ To see articles please go to:
 
 * [Part 1](https://hackernoon.com/using-redis-streams-with-nestjs-part-1-setup) - Setting up the NestJS application and connecting to Redis
 * [Part 2](https://hackernoon.com/using-redis-streams-with-nestjs-part-2-reading-from-stream) - Populating Redis streams and reading from in **fan-out mode**
-* Part 3 - Using **consumer groups** to handle one stream from multiple actors in a way that one message is sent to and processed only by a single actor (consumer)
-
-
-### TODOs
-- [ ] Add link for pt3 to README to posts when it comes out
+* [Part 3](https://hackernoon.com/using-redis-streams-with-nestjs-part-3-consumer-groups) - Using **consumer groups** to handle one stream from multiple actors in a way that one message is sent to and processed only by a single actor (consumer)
