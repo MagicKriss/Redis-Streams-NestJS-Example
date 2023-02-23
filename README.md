@@ -11,6 +11,6 @@ To see the articles please go to:
 
 
 Same story published on dev.to:
-* [Part 1](https://dev.to/magickriss/redis-streams-nestjs-part-2-reading-from-stream-1643)
+* [Part 1](https://dev.to/magickriss/redis-streams-nestjs-part-1-setup-1jcj)
 * [Part 2](https://dev.to/magickriss/redis-streams-nestjs-part-2-reading-from-stream-1643)
 * [Part 3](https://dev.to/magickriss/redis-streams-nestjs-part-3-consumer-groups-3am7)
